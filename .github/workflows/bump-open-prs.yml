@@ -73,7 +73,7 @@ jobs:
           git checkout -b "$branch"
           git add Formula/open-prs.rb
           git commit -m "chore: bump open-prs to $version"
-          git push --force-with-lease origin "$branch"
+          git push --force origin "$branch"
           if gh pr view --repo logfoxai/homebrew-tap --head "$branch" &>/dev/null; then
             echo "PR already exists for $branch, push updated it."
           else
