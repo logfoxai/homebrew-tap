@@ -1,8 +1,8 @@
 class OpenPrs < Formula
   desc "TUI + CLI dashboard for all open PRs across a GitHub org"
   homepage "https://github.com/logfoxai/open-prs"
-  url "https://github.com/logfoxai/open-prs/archive/refs/tags/v0.4.2.tar.gz"
-  sha256 "c79fe9e3d8f4a8ca2395f7614ec4a202d91aadd8c1b81c654be0d392fa45152b"
+  url "https://github.com/logfoxai/open-prs/archive/refs/tags/v0.4.4.tar.gz"
+  sha256 "195bf7fa2df685c390035645026ad39a55559a891bee9fe506a3a7831d1d56f8"
   license "MIT"
 
   depends_on "python@3.11"
