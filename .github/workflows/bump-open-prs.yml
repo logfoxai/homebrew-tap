@@ -1,0 +1,80 @@
+name: Bump open-prs
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to bump to (e.g. v0.4.6). Leave empty to use latest release."
+        required: false
+        type: string
+
+jobs:
+  bump:
+    name: Bump open-prs formula
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: Get latest release
+        id: release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if [ -n "${{ inputs.version }}" ]; then
+            echo "version=${{ inputs.version }}" >> $GITHUB_OUTPUT
+          else
+            version=$(gh release view --repo logfoxai/open-prs --json tagName -q .tagName)
+            echo "version=$version" >> $GITHUB_OUTPUT
+          fi
+          echo "Resolved version: ${{ steps.release.outputs.version }}"
+
+      - name: Download tarball and compute SHA256
+        id: tarball
+        run: |
+          version="${{ steps.release.outputs.version }}"
+          url="https://github.com/logfoxai/open-prs/archive/refs/tags/${version}.tar.gz"
+          curl -sL -o tarball.tar.gz "$url"
+          sha256=$(shasum -a 256 tarball.tar.gz | cut -d' ' -f1)
+          echo "url=$url" >> $GITHUB_OUTPUT
+          echo "sha256=$sha256" >> $GITHUB_OUTPUT
+          echo "Computed sha256: $sha256"
+
+      - name: Update formula
+        id: update
+        run: |
+          version="${{ steps.release.outputs.version }}"
+          url="${{ steps.tarball.outputs.url }}"
+          sha256="${{ steps.tarball.outputs.sha256 }}"
+          formula="Formula/open-prs.rb"
+          sed -i "s|url \".*\"|url \"$url\"|" "$formula"
+          sed -i "s|sha256 \".*\"|sha256 \"$sha256\"|" "$formula"
+          if git diff --quiet "$formula"; then
+            echo "changed=false" >> $GITHUB_OUTPUT
+            echo "Formula already at $version, nothing to do."
+          else
+            echo "changed=true" >> $GITHUB_OUTPUT
+            git diff "$formula"
+          fi
+
+      - name: Create PR
+        if: steps.update.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          version="${{ steps.release.outputs.version }}"
+          branch="bump-open-prs-${version}"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$branch"
+          git add Formula/open-prs.rb
+          git commit -m "chore: bump open-prs to $version"
+          git push origin "$branch"
+          gh pr create \
+            --title "chore: bump open-prs to $version" \
+            --body "Bumps open-prs formula to $version. Triggered manually." \
+            --base main \
+            --head "$branch"
