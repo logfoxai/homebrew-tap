@@ -73,9 +73,13 @@ jobs:
           git checkout -b "$branch"
           git add Formula/open-prs.rb
           git commit -m "chore: bump open-prs to $version"
-          git push origin "$branch"
-          gh pr create \
-            --title "chore: bump open-prs to $version" \
-            --body "Bumps open-prs formula to $version. Triggered manually." \
-            --base main \
-            --head "$branch"
+          git push --force-with-lease origin "$branch"
+          if gh pr view --repo logfoxai/homebrew-tap --head "$branch" &>/dev/null; then
+            echo "PR already exists for $branch, push updated it."
+          else
+            gh pr create \
+              --title "chore: bump open-prs to $version" \
+              --body "Bumps open-prs formula to $version. Triggered manually." \
+              --base main \
+              --head "$branch"
+          fi
