@@ -9,10 +9,12 @@ class OpenPrs < Formula
   depends_on "gh"
 
   def install
+    inreplace "open-prs", /^__version__ = "dev"/, "__version__ = \"#{version}\""
     bin.install "open-prs"
   end
 
   test do
     assert_match "Usage:", shell_output("#{bin}/open-prs --help 2>&1", 0)
+    assert_match version.to_s, shell_output("#{bin}/open-prs --version")
   end
 end
